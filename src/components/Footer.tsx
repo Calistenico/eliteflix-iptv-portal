@@ -1,4 +1,3 @@
-
 const Footer = () => {
   const quickLinks = [
     { label: 'Início', href: '#inicio' },
@@ -17,7 +16,7 @@ const Footer = () => {
 
   const socialLinks = [
     { label: 'WhatsApp', href: 'https://wa.me/5544991082160', icon: '📱' },
-    { label: 'Telegram', href: '#', icon: '✈️' },
+    { label: 'Telegram', href: 'https://t.me/CeoCodexCeo', icon: '✈️' },
     { label: 'Instagram', href: 'https://instagram.com/desenvolvedor_ofc', icon: '📷' },
     { label: 'Email', href: '#', icon: '✉️' }
   ];
