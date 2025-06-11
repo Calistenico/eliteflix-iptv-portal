@@ -16,9 +16,9 @@ const Footer = () => {
   ];
 
   const socialLinks = [
-    { label: 'WhatsApp', href: '#', icon: '📱' },
+    { label: 'WhatsApp', href: 'https://wa.me/5544991082160', icon: '📱' },
     { label: 'Telegram', href: '#', icon: '✈️' },
-    { label: 'Instagram', href: '#', icon: '📷' },
+    { label: 'Instagram', href: 'https://instagram.com/desenvolvedor_ofc', icon: '📷' },
     { label: 'Email', href: '#', icon: '✉️' }
   ];
 
@@ -81,12 +81,18 @@ const Footer = () => {
                 <a 
                   key={social.label}
                   href={social.href} 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center text-gray-400 hover:text-primary transition-colors duration-300"
                 >
                   <span className="mr-3 text-lg">{social.icon}</span>
                   {social.label}
                 </a>
               ))}
+            </div>
+            <div className="mt-4 text-gray-400">
+              <p className="text-sm">WhatsApp: (44) 99108-2160</p>
+              <p className="text-sm">Instagram: @desenvolvedor_ofc</p>
             </div>
           </div>
         </div>

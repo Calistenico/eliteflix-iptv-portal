@@ -2,6 +2,14 @@
 import { Button } from '@/components/ui/button';
 
 const HeroSection = () => {
+  const handleViewPlans = () => {
+    document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleAffiliateClick = () => {
+    window.open("https://app.cakto.com.br/affiliate/invite/87eb917f-3ae9-44c5-af54-ad7f88369f79", "_blank");
+  };
+
   return (
     <section id="inicio" className="min-h-screen flex items-center justify-center relative overflow-hidden">
       {/* Background with gradient */}
@@ -20,12 +28,14 @@ const HeroSection = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
             <Button 
+              onClick={handleViewPlans}
               size="lg" 
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 hover:scale-105 animate-pulse-red"
             >
               Ver Planos
             </Button>
             <Button 
+              onClick={handleAffiliateClick}
               variant="outline" 
               size="lg"
               className="border-2 border-white text-white hover:bg-white hover:text-black px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 hover:scale-105"

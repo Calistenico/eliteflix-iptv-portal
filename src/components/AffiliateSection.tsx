@@ -26,6 +26,10 @@ const AffiliateSection = () => {
     }
   ];
 
+  const handleAffiliateClick = () => {
+    window.open("https://app.cakto.com.br/affiliate/invite/87eb917f-3ae9-44c5-af54-ad7f88369f79", "_blank");
+  };
+
   return (
     <section id="afiliados" className="py-20 bg-secondary/30">
       <div className="container mx-auto px-4">
@@ -87,7 +91,10 @@ const AffiliateSection = () => {
 
           {/* CTA */}
           <div className="text-center">
-            <Button className="bg-primary hover:bg-primary/90 text-white font-bold px-12 py-4 text-xl rounded-lg transition-all duration-300 hover:scale-105 animate-pulse-red">
+            <Button 
+              onClick={handleAffiliateClick}
+              className="bg-primary hover:bg-primary/90 text-white font-bold px-12 py-4 text-xl rounded-lg transition-all duration-300 hover:scale-105 animate-pulse-red"
+            >
               Quero ser um Afiliado EliteFlix
             </Button>
             <p className="text-gray-400 mt-4">

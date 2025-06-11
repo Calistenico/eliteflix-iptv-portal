@@ -17,7 +17,8 @@ const PlansSection = () => {
         "Atualizações automáticas"
       ],
       buttonText: "Assinar Agora",
-      popular: false
+      popular: false,
+      link: "https://pay.cakto.com.br/3bo8dvz_374782"
     },
     {
       title: "Plano Revenda",
@@ -32,7 +33,8 @@ const PlansSection = () => {
         "Suporte prioritário"
       ],
       buttonText: "Começar Revenda",
-      popular: true
+      popular: true,
+      link: "whatsapp"
     },
     {
       title: "Programa Afiliados",
@@ -47,9 +49,18 @@ const PlansSection = () => {
         "Suporte dedicado"
       ],
       buttonText: "Ser Afiliado",
-      popular: false
+      popular: false,
+      link: "https://app.cakto.com.br/affiliate/invite/87eb917f-3ae9-44c5-af54-ad7f88369f79"
     }
   ];
+
+  const handleButtonClick = (link: string) => {
+    if (link === "whatsapp") {
+      window.open("https://wa.me/5544991082160?text=Olá! Gostaria de solicitar um orçamento.", "_blank");
+    } else {
+      window.open(link, "_blank");
+    }
+  };
 
   return (
     <section id="planos" className="py-20 bg-background">
@@ -103,6 +114,7 @@ const PlansSection = () => {
                 </ul>
                 
                 <Button 
+                  onClick={() => handleButtonClick(plan.link)}
                   className={`w-full mt-6 ${
                     plan.popular 
                       ? 'bg-primary hover:bg-primary/90' 

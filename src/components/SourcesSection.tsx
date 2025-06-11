@@ -13,7 +13,8 @@ const SourcesSection = () => {
         "Fontes estáveis e atualizadas",
         "Suporte técnico incluso",
         "Atualizações regulares"
-      ]
+      ],
+      link: "https://pay.cakto.com.br/44sxms2"
     },
     {
       title: "Pacote Premium",
@@ -24,7 +25,8 @@ const SourcesSection = () => {
         "Fontes premium exclusivas",
         "Suporte técnico prioritário",
         "Atualizações em tempo real"
-      ]
+      ],
+      link: "https://pay.cakto.com.br/79ov7jq"
     },
     {
       title: "Pacote Ilimitado",
@@ -35,9 +37,18 @@ const SourcesSection = () => {
         "Todas as fontes disponíveis",
         "Suporte técnico 24/7",
         "API completa inclusa"
-      ]
+      ],
+      link: "whatsapp"
     }
   ];
+
+  const handleButtonClick = (link: string) => {
+    if (link === "whatsapp") {
+      window.open("https://wa.me/5544991082160?text=Olá! Gostaria de solicitar um orçamento para o Pacote Ilimitado.", "_blank");
+    } else {
+      window.open(link, "_blank");
+    }
+  };
 
   return (
     <section id="fontes" className="py-20 bg-secondary/30">
@@ -93,7 +104,10 @@ const SourcesSection = () => {
                   ))}
                 </ul>
                 
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold">
+                <Button 
+                  onClick={() => handleButtonClick(option.link)}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold"
+                >
                   Adquirir Fontes
                 </Button>
               </CardContent>
