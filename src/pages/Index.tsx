@@ -5,7 +5,7 @@ import MoviesCarousel from '@/components/MoviesCarousel';
 import PlansSection from '@/components/PlansSection';
 import SourcesSection from '@/components/SourcesSection';
 import ServerSection from '@/components/ServerSection';
-import ChannelsCarousel from '@/components/ChannelsCarousel';
+import RandomChannelsCarousel from '@/components/RandomChannelsCarousel';
 import AffiliateSection from '@/components/AffiliateSection';
 import Footer from '@/components/Footer';
 
@@ -37,7 +37,7 @@ const Index = () => {
       {/* Channels Demo Carousel */}
       <section className="py-12 bg-secondary/20">
         <div className="container mx-auto px-4">
-          <ChannelsCarousel />
+          <RandomChannelsCarousel />
         </div>
       </section>
       
