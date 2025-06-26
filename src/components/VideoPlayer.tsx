@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,16 +24,27 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hlsRef = useRef<any>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    console.log('VideoPlayer iniciado para canal:', channel.name);
+    
     // Verificar se o IP já assistiu este canal
     const blockedChannels = JSON.parse(localStorage.getItem('blockedChannels') || '[]');
     if (blockedChannels.includes(channel.name)) {
+      console.log('Canal bloqueado:', channel.name);
       setIsBlocked(true);
       setShowMessage(true);
       setIsLoading(false);
       return;
     }
+
+    // Timeout de 10 segundos para loading
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.log('Timeout de loading atingido');
+      setVideoError(true);
+      setIsLoading(false);
+    }, 10000);
 
     // Carregar o player
     loadVideo();
@@ -42,6 +54,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
+            console.log('Tempo esgotado para canal:', channel.name);
             // Tempo esgotado
             if (videoRef.current) {
               videoRef.current.pause();
@@ -63,8 +76,12 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
     }
 
     return () => {
+      console.log('Limpando VideoPlayer para canal:', channel.name);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
       }
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -97,28 +114,33 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
               maxBufferHole: 0.5,
               lowLatencyMode: true,
               backBufferLength: 90,
-              manifestLoadingTimeOut: 10000,
-              manifestLoadingMaxRetry: 4,
+              manifestLoadingTimeOut: 8000,
+              manifestLoadingMaxRetry: 2,
               manifestLoadingRetryDelay: 1000,
-              levelLoadingTimeOut: 10000,
-              levelLoadingMaxRetry: 4,
+              levelLoadingTimeOut: 8000,
+              levelLoadingMaxRetry: 2,
               levelLoadingRetryDelay: 1000,
-              fragLoadingTimeOut: 20000,
-              fragLoadingMaxRetry: 6,
+              fragLoadingTimeOut: 15000,
+              fragLoadingMaxRetry: 3,
               fragLoadingRetryDelay: 1000,
             });
             
             hlsRef.current = hls;
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              console.log('Manifest carregado para:', channel.name);
+              console.log('Manifest carregado com sucesso para:', channel.name);
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+              }
               setIsLoading(false);
               setVideoError(false);
+              
+              // Tentar reproduzir
               video.play().catch(error => {
-                console.log('Tentando reprodução sem áudio...');
+                console.log('Tentando reprodução sem áudio para:', channel.name);
                 video.muted = true;
-                video.play().catch(() => {
-                  console.error('Erro na reprodução:', error);
+                video.play().catch(playError => {
+                  console.error('Erro na reprodução:', playError);
                   setVideoError(true);
                   setIsLoading(false);
                 });
@@ -126,11 +148,14 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
             });
             
             hls.on(Hls.Events.ERROR, (event, data) => {
-              console.error('Erro HLS:', data);
+              console.error('Erro HLS para', channel.name, ':', data);
               if (data.fatal) {
-                console.log('Erro fatal detectado');
+                console.log('Erro fatal HLS detectado');
                 setVideoError(true);
                 setIsLoading(false);
+                if (loadingTimeoutRef.current) {
+                  clearTimeout(loadingTimeoutRef.current);
+                }
               }
             });
             
@@ -140,45 +165,86 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
           } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             console.log('Usando HLS nativo para:', channel.name);
             video.src = channel.url;
-            video.addEventListener('loadedmetadata', () => {
+            
+            const handleLoad = () => {
+              console.log('Vídeo carregado com HLS nativo:', channel.name);
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+              }
               setIsLoading(false);
               setVideoError(false);
-            });
-            video.addEventListener('error', () => {
+            };
+            
+            const handleError = () => {
+              console.error('Erro no HLS nativo:', channel.name);
               setVideoError(true);
               setIsLoading(false);
-            });
+              if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+              }
+            };
+            
+            video.addEventListener('loadedmetadata', handleLoad);
+            video.addEventListener('error', handleError);
           } else {
-            console.error('HLS não suportado');
+            console.error('HLS não suportado para:', channel.name);
             setVideoError(true);
             setIsLoading(false);
+            if (loadingTimeoutRef.current) {
+              clearTimeout(loadingTimeoutRef.current);
+            }
           }
         } catch (error) {
           console.error('Erro ao carregar HLS.js:', error);
           setVideoError(true);
           setIsLoading(false);
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+          }
         }
       } else {
+        console.log('Carregando vídeo não-HLS:', channel.name);
         // Para outros tipos de vídeo
         video.src = channel.url;
-        video.addEventListener('loadedmetadata', () => {
+        
+        const handleLoad = () => {
+          console.log('Vídeo não-HLS carregado:', channel.name);
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+          }
           setIsLoading(false);
           setVideoError(false);
-        });
-        video.addEventListener('error', () => {
+        };
+        
+        const handleError = () => {
+          console.error('Erro no vídeo não-HLS:', channel.name);
           setVideoError(true);
           setIsLoading(false);
-        });
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+          }
+        };
+        
+        video.addEventListener('loadedmetadata', handleLoad);
+        video.addEventListener('error', handleError);
       }
     } catch (error) {
-      console.error('Erro geral:', error);
+      console.error('Erro geral ao carregar vídeo:', error);
       setVideoError(true);
       setIsLoading(false);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     }
   };
 
   const handleWhatsAppClick = () => {
     window.open('https://wa.me/5544991082160?text=Olá! Gostaria de assinar um plano EliteFlix para assistir aos canais completos.', '_blank');
+  };
+
+  const handleClose = () => {
+    console.log('Fechando player para canal:', channel.name);
+    onClose();
   };
 
   const formatTime = (seconds: number) => {
@@ -189,7 +255,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
 
   if (isBlocked && showMessage) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
         <Card className="max-w-md w-full bg-card border-border">
           <CardContent className="p-6 text-center">
             <h3 className="text-xl font-bold text-white mb-4">
@@ -206,7 +272,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
                 📱 Assinar via WhatsApp
               </Button>
               <Button 
-                onClick={onClose}
+                onClick={handleClose}
                 variant="outline"
                 className="w-full"
               >
@@ -221,7 +287,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
 
   if (videoError) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4">
         <Card className="max-w-md w-full bg-card border-border">
           <CardContent className="p-6 text-center">
             <h3 className="text-xl font-bold text-white mb-4">
@@ -238,7 +304,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
                 📱 Assinar via WhatsApp
               </Button>
               <Button 
-                onClick={onClose}
+                onClick={handleClose}
                 variant="outline"
                 className="w-full"
               >
@@ -252,7 +318,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] p-4">
       <div className="max-w-4xl w-full">
         <div className="relative">
           {isLoading && (
@@ -275,14 +341,14 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
           />
           
           {!isLoading && (
-            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg">
+            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg z-20">
               Tempo restante: {formatTime(timeLeft)}
             </div>
           )}
           
           <Button
-            onClick={onClose}
-            className="absolute top-4 left-4 bg-black/70 hover:bg-black/90"
+            onClick={handleClose}
+            className="absolute top-4 left-4 bg-red-600 hover:bg-red-700 text-white z-30"
             size="sm"
           >
             ✕ Fechar
@@ -298,7 +364,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
       </div>
 
       {showMessage && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-40">
           <Card className="max-w-md w-full bg-card border-border">
             <CardContent className="p-6 text-center">
               <h3 className="text-xl font-bold text-white mb-4">
@@ -315,7 +381,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
                   📱 Assinar via WhatsApp
                 </Button>
                 <Button 
-                  onClick={onClose}
+                  onClick={handleClose}
                   variant="outline"
                   className="w-full"
                 >
