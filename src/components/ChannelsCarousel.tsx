@@ -38,11 +38,13 @@ const ChannelsCarousel = () => {
   ];
 
   const handleChannelClick = (channel: Channel) => {
-    console.log('Canal selecionado:', channel.name, channel.url);
+    console.log('Iniciando reprodução do canal:', channel.name);
+    console.log('URL do canal:', channel.url);
     setSelectedChannel(channel);
   };
 
   const handleClosePlayer = () => {
+    console.log('Fechando player');
     setSelectedChannel(null);
   };
 
@@ -67,7 +69,7 @@ const ChannelsCarousel = () => {
         >
           <CarouselContent className="-ml-2 md:-ml-4">
             {channels.map((channel, index) => (
-              <CarouselItem key={`channel-${index}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3">
+              <CarouselItem key={`channel-${index}-${channel.name}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3">
                 <Card 
                   className="bg-card border-border hover:border-primary transition-all duration-300 cursor-pointer group" 
                   onClick={() => handleChannelClick(channel)}

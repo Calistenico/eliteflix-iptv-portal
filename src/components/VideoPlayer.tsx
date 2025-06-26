@@ -19,6 +19,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hlsRef = useRef<any>(null);
@@ -29,6 +30,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
     if (blockedChannels.includes(channel.name)) {
       setIsBlocked(true);
       setShowMessage(true);
+      setIsLoading(false);
       return;
     }
 
@@ -37,80 +39,140 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
       if (videoRef.current) {
         const video = videoRef.current;
         
-        // Verificar se o navegador suporta HLS nativamente
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          console.log('HLS nativo suportado');
-          video.src = channel.url;
-          video.play().catch(error => {
-            console.error('Erro ao reproduzir vídeo:', error);
-            setVideoError(true);
-          });
-        } else {
-          // Usar HLS.js
-          try {
-            const Hls = (await import('hls.js')).default;
+        try {
+          console.log('Tentando carregar canal:', channel.name, channel.url);
+          
+          // Primeiro, tentar HLS.js
+          const Hls = (await import('hls.js')).default;
+          
+          if (Hls.isSupported()) {
+            console.log('Usando HLS.js para:', channel.name);
+            const hls = new Hls({
+              enableWorker: false,
+              debug: false,
+              maxBufferLength: 30,
+              maxMaxBufferLength: 600,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
+              lowLatencyMode: true,
+              backBufferLength: 90,
+              manifestLoadingTimeOut: 10000,
+              manifestLoadingMaxRetry: 4,
+              manifestLoadingRetryDelay: 1000,
+              levelLoadingTimeOut: 10000,
+              levelLoadingMaxRetry: 4,
+              levelLoadingRetryDelay: 1000,
+              fragLoadingTimeOut: 20000,
+              fragLoadingMaxRetry: 6,
+              fragLoadingRetryDelay: 1000,
+            });
             
-            if (Hls.isSupported()) {
-              console.log('Usando HLS.js');
-              const hls = new Hls({
-                enableWorker: false,
-                debug: false
-              });
-              
-              hlsRef.current = hls;
-              hls.loadSource(channel.url);
-              hls.attachMedia(video);
-              
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                console.log('Manifest carregado, iniciando reprodução');
-                video.play().catch(error => {
-                  console.error('Erro ao reproduzir vídeo:', error);
+            hlsRef.current = hls;
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              console.log('Manifest carregado com sucesso para:', channel.name);
+              setIsLoading(false);
+              setVideoError(false);
+              video.play().catch(error => {
+                console.error('Erro ao reproduzir vídeo:', error);
+                // Tentar sem áudio primeiro
+                video.muted = true;
+                video.play().catch(() => {
                   setVideoError(true);
+                  setIsLoading(false);
                 });
               });
-              
-              hls.on(Hls.Events.ERROR, (event, data) => {
-                console.error('Erro HLS:', data);
-                if (data.fatal) {
-                  setVideoError(true);
+            });
+            
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              console.error('Erro HLS para', channel.name, ':', data);
+              if (data.fatal) {
+                switch (data.type) {
+                  case Hls.ErrorTypes.NETWORK_ERROR:
+                    console.log('Erro de rede, tentando recuperar...');
+                    hls.startLoad();
+                    break;
+                  case Hls.ErrorTypes.MEDIA_ERROR:
+                    console.log('Erro de mídia, tentando recuperar...');
+                    hls.recoverMediaError();
+                    break;
+                  default:
+                    console.log('Erro fatal, destruindo HLS...');
+                    hls.destroy();
+                    setVideoError(true);
+                    setIsLoading(false);
+                    break;
                 }
-              });
-            } else {
-              console.error('HLS não suportado');
+              }
+            });
+            
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+              console.log('Mídia anexada para:', channel.name);
+              hls.loadSource(channel.url);
+            });
+            
+            hls.attachMedia(video);
+            
+          } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            console.log('Usando HLS nativo para:', channel.name);
+            video.src = channel.url;
+            video.addEventListener('loadedmetadata', () => {
+              console.log('Metadata carregada para:', channel.name);
+              setIsLoading(false);
+              setVideoError(false);
+            });
+            video.addEventListener('error', () => {
+              console.error('Erro no vídeo nativo para:', channel.name);
               setVideoError(true);
-            }
-          } catch (error) {
-            console.error('Erro ao carregar HLS.js:', error);
+              setIsLoading(false);
+            });
+            video.play().catch(error => {
+              console.error('Erro ao reproduzir vídeo nativo:', error);
+              video.muted = true;
+              video.play().catch(() => {
+                setVideoError(true);
+                setIsLoading(false);
+              });
+            });
+          } else {
+            console.error('HLS não suportado no navegador');
             setVideoError(true);
+            setIsLoading(false);
           }
+        } catch (error) {
+          console.error('Erro ao carregar HLS.js:', error);
+          setVideoError(true);
+          setIsLoading(false);
         }
       }
     };
 
     loadHLS();
 
-    // Iniciar contador
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          // Tempo esgotado
-          if (videoRef.current) {
-            videoRef.current.pause();
+    // Iniciar contador apenas se não estiver bloqueado
+    if (!isBlocked) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            // Tempo esgotado
+            if (videoRef.current) {
+              videoRef.current.pause();
+            }
+            if (hlsRef.current) {
+              hlsRef.current.destroy();
+            }
+            setShowMessage(true);
+            
+            // Bloquear canal para este IP
+            const newBlockedChannels = [...blockedChannels, channel.name];
+            localStorage.setItem('blockedChannels', JSON.stringify(newBlockedChannels));
+            
+            return 0;
           }
-          if (hlsRef.current) {
-            hlsRef.current.destroy();
-          }
-          setShowMessage(true);
-          
-          // Bloquear canal para este IP
-          const newBlockedChannels = [...blockedChannels, channel.name];
-          localStorage.setItem('blockedChannels', JSON.stringify(newBlockedChannels));
-          
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+          return prev - 1;
+        });
+      }, 1000);
+    }
 
     return () => {
       if (intervalRef.current) {
@@ -120,7 +182,7 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
         hlsRef.current.destroy();
       }
     };
-  }, [channel.name, channel.url]);
+  }, [channel.name, channel.url, isBlocked]);
 
   const handleWhatsAppClick = () => {
     window.open('https://wa.me/5544991082160?text=Olá! Gostaria de assinar um plano EliteFlix para assistir aos canais completos.', '_blank');
@@ -200,6 +262,15 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
       <div className="max-w-4xl w-full">
         <div className="relative">
+          {isLoading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg z-10">
+              <div className="text-white text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                <p>Carregando canal...</p>
+              </div>
+            </div>
+          )}
+          
           <video
             ref={videoRef}
             className="w-full h-auto max-h-[70vh] bg-black rounded-lg"
@@ -207,12 +278,15 @@ const VideoPlayer = ({ channel, onClose }: VideoPlayerProps) => {
             autoPlay
             playsInline
             muted
+            crossOrigin="anonymous"
           />
           
           {/* Timer */}
-          <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg">
-            Tempo restante: {formatTime(timeLeft)}
-          </div>
+          {!isLoading && (
+            <div className="absolute top-4 right-4 bg-black/70 text-white px-3 py-1 rounded-lg">
+              Tempo restante: {formatTime(timeLeft)}
+            </div>
+          )}
           
           {/* Close button */}
           <Button
