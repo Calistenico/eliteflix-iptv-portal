@@ -1,3 +1,4 @@
+
 const Footer = () => {
   const quickLinks = [
     { label: 'Início', href: '#inicio' },
@@ -8,8 +9,6 @@ const Footer = () => {
   ];
 
   const legalLinks = [
-    { label: 'Termos de Uso', href: '#' },
-    { label: 'Política de Privacidade', href: '#' },
     { label: 'FAQ', href: '#' },
     { label: 'Suporte', href: '#' }
   ];

@@ -27,7 +27,7 @@ const AffiliateSection = () => {
   ];
 
   const handleAffiliateClick = () => {
-    window.open("https://app.cakto.com.br/affiliate/invite/87eb917f-3ae9-44c5-af54-ad7f88369f79", "_blank");
+    window.open("https://wa.me/5544991082160?text=Olá! Quero ser EliteFlix e começar a ganhar dinheiro com IPTV!", "_blank");
   };
 
   return (
@@ -95,7 +95,7 @@ const AffiliateSection = () => {
               onClick={handleAffiliateClick}
               className="bg-primary hover:bg-primary/90 text-white font-bold px-12 py-4 text-xl rounded-lg transition-all duration-300 hover:scale-105 animate-pulse-red"
             >
-              Quero ser um Afiliado EliteFlix
+              Quero ser EliteFlix
             </Button>
             <p className="text-gray-400 mt-4">
               Comece a ganhar dinheiro hoje mesmo. É grátis para se cadastrar!
