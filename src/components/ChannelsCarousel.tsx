@@ -38,6 +38,7 @@ const ChannelsCarousel = () => {
   ];
 
   const handleChannelClick = (channel: Channel) => {
+    console.log('Canal selecionado:', channel.name, channel.url);
     setSelectedChannel(channel);
   };
 
@@ -66,14 +67,20 @@ const ChannelsCarousel = () => {
         >
           <CarouselContent className="-ml-2 md:-ml-4">
             {channels.map((channel, index) => (
-              <CarouselItem key={index} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3">
-                <Card className="bg-card border-border hover:border-primary transition-all duration-300 cursor-pointer" onClick={() => handleChannelClick(channel)}>
+              <CarouselItem key={`channel-${index}`} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3">
+                <Card 
+                  className="bg-card border-border hover:border-primary transition-all duration-300 cursor-pointer group" 
+                  onClick={() => handleChannelClick(channel)}
+                >
                   <CardContent className="p-0">
-                    <div className="relative group">
+                    <div className="relative">
                       <img
                         src={channel.thumbnail}
                         alt={channel.name}
                         className="w-full h-48 object-cover rounded-t-lg"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/400x300/1a1a1a/ffffff?text=' + encodeURIComponent(channel.name);
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
                         <Button className="bg-primary hover:bg-primary/90">
@@ -83,15 +90,15 @@ const ChannelsCarousel = () => {
                     </div>
                     <div className="p-4">
                       <h4 className="text-white font-semibold text-lg">{channel.name}</h4>
-                      <p className="text-gray-400 text-sm">Clique para assistir</p>
+                      <p className="text-gray-400 text-sm">Clique para assistir por 60 segundos</p>
                     </div>
                   </CardContent>
                 </Card>
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="hidden md:flex" />
-          <CarouselNext className="hidden md:flex" />
+          <CarouselPrevious className="hidden md:flex -left-12" />
+          <CarouselNext className="hidden md:flex -right-12" />
         </Carousel>
       </div>
 
